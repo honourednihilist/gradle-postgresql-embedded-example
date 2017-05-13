@@ -1,0 +1,87 @@
+plugins {
+    id "com.github.honourednihilist.gradle-postgresql-embedded" version "0.1.0"
+}
+
+group = 'com.github.honourednihilist'
+
+apply plugin: 'java'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+compileJava {
+    options.encoding = 'UTF-8'
+}
+
+compileTestJava {
+    options.encoding = 'UTF-8'
+}
+
+repositories {
+    jcenter()
+    mavenCentral()
+}
+
+dependencies {
+    compileOnly(group: 'org.projectlombok', name: 'lombok', version: '1.16.16')
+    compile(group: 'org.springframework.boot', name: 'spring-boot-starter-web', version: '1.5.3.RELEASE')
+    compile(group: 'org.springframework.data', name: 'spring-data-commons', version: '1.13.3.RELEASE')
+    compile(group: 'org.mybatis.spring.boot', name: 'mybatis-spring-boot-starter', version: '1.3.0')
+    compile(group: 'com.zaxxer', name: 'HikariCP', version: '2.6.1')
+    compile(group: 'org.postgresql', name: 'postgresql', version: '42.0.0')
+    compile(group: 'org.liquibase', name: 'liquibase-core', version: '3.5.3')
+    compile(group: 'com.typesafe', name: 'config', version: '1.3.1')
+    compile(group: 'one.util', name: 'streamex', version: '0.6.5')
+
+    testCompileOnly(group: 'org.projectlombok', name: 'lombok', version: '1.16.16')
+    testCompile(group: 'org.springframework.boot', name: 'spring-boot-starter-test', version: '1.5.3.RELEASE')
+    testCompile(group: 'org.springframework.boot', name: 'spring-boot-starter-tomcat', version: '1.5.3.RELEASE')
+    testCompile(group: 'io.rest-assured', name: 'rest-assured', version: '3.0.2')
+}
+
+apply plugin: 'com.github.honourednihilist.gradle-postgresql-embedded'
+
+postgresEmbedded {
+    port = 54321
+}
+
+task liquibaseEmbedded(type: JavaExec) {
+    dependsOn startPostgres
+
+    group = 'Liquibase'
+    description = 'Applies database changesets to running embedded PostgreSQL server.'
+
+    classpath = sourceSets.main.compileClasspath
+    main = 'liquibase.integration.commandline.Main'
+    args = ['--url', "jdbc:postgresql://${postgresEmbedded.host}:${postgresEmbedded.port}/${postgresEmbedded.dbName}",
+            '--username', "$postgresEmbedded.username",
+            '--password', "$postgresEmbedded.password",
+            '--changeLogFile', "${projectDir}/src/main/liquibase/db/changelog/db.changelog-master.xml",
+            'update']
+}
+
+test {
+    useJUnit {
+        excludeCategories 'com.github.honourednihilist.gradle.postgresql.embedded.example.IntegrationTests'
+    }
+}
+
+task integrationTests(type: Test) {
+    dependsOn liquibaseEmbedded
+
+    group = 'Verification'
+    description = 'Runs the integration tests'
+
+    testLogging.showStandardStreams = true
+    maxParallelForks = 1
+
+    useJUnit {
+        includeCategories 'com.github.honourednihilist.gradle.postgresql.embedded.example.IntegrationTests'
+    }
+}
+
+check.dependsOn integrationTests
+
+gradle.buildFinished {
+    println("\nFinished: " + new Date())
+}
