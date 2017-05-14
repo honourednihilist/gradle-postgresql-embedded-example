@@ -39,8 +39,6 @@ dependencies {
     testCompile(group: 'io.rest-assured', name: 'rest-assured', version: '3.0.2')
 }
 
-apply plugin: 'com.github.honourednihilist.gradle-postgresql-embedded'
-
 postgresEmbedded {
     port = 54321
 }
