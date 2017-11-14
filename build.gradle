@@ -1,5 +1,5 @@
 plugins {
-    id "com.github.honourednihilist.gradle-postgresql-embedded" version "0.2.0"
+    id "com.github.honourednihilist.gradle-postgresql-embedded" version "0.3.0"
 }
 
 group = 'com.github.honourednihilist'
